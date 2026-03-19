@@ -19,15 +19,58 @@ document.addEventListener("DOMContentLoaded", () => {
         activityCard.className = "activity-card";
 
         const spotsLeft = details.max_participants - details.participants.length;
+        const participantsList = details.participants || [];
+        const participantsMarkup =
+          participantsList.length > 0
+            ? `<ul class="participants-list">${participantsList
+                .map(
+                  (participant) => `
+                    <li class="participant-item">
+                      <span>${participant}</span>
+                      <button class="delete-participant" data-participant="${participant}" data-activity="${name}">✖</button>
+                    </li>`
+                )
+                .join("")}</ul>`
+            : '<p class="participants-empty">No participants yet. Be the first to join!</p>';
 
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <div class="participants-section">
+            <p class="participants-title">Participants</p>
+            ${participantsMarkup}
+          </div>
         `;
 
         activitiesList.appendChild(activityCard);
+
+        // Add delete functionality
+        activityCard.querySelectorAll(".delete-participant").forEach((button) => {
+          button.addEventListener("click", async (event) => {
+            const participant = event.target.dataset.participant;
+            const activity = event.target.dataset.activity;
+
+            try {
+              const response = await fetch(
+                `/activities/${encodeURIComponent(activity)}/unregister?participant=${encodeURIComponent(participant)}`,
+                {
+                  method: "DELETE",
+                }
+              );
+
+              if (response.ok) {
+                // Refresh activities list
+                fetchActivities();
+              } else {
+                console.error("Failed to unregister participant.");
+              }
+            } catch (error) {
+              console.error("Error unregistering participant:", error);
+            }
+          });
+        });
 
         // Add option to select dropdown
         const option = document.createElement("option");
